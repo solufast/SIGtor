@@ -1,117 +1,46 @@
-# SIGtor: Supplimentary Synthetic Image Generetion for Object Detection and Segmentation Datasets
+
+# SIGtor: Supplementary Synthetic Image Generation for Object Detection and Segmentation Datasets
 
 ## Introduction
 
-One of the challenges in deep learning tasks, whether it is classification, detection or segmentation, is the need for
-huge collection of well-balanced training data. Especially, this challenge becomes serious when it comes to the latter
-two tasks as creating large training dataset for these tasks is a dauntingly tedious and error-prone process. As a
-result, data augmentation has become an indispensable part of training deep learning models so that the small datasets
-one has acquired gets multiplied with various morphological or geometrical tweaking, either on fly during training
-process or offline.
+In deep learning, tasks such as classification, detection, and segmentation often face the challenge of requiring a large, well-balanced training dataset. Generating substantial datasets for detection and segmentation is particularly challenging, as it is both tedious and prone to errors. Consequently, data augmentation has become crucial in training deep learning models, allowing small datasets to be augmented through morphological or geometrical modifications, either on-the-fly during training or offline.
 
-Here, I want to show how it is possible to artificially generate, theoretically an infinite number of, new supplementary
-artificial datasets for object detection or segmentation challenge from a given existing small(in fact the size doesn’t
-matter as long as one needs more) dataset. The algorithm I am about to share is a simple copy-paste based augmentation
-but very robust in handling object overlapping, dynamic placement on a given background image and supports object level
-individual augmentation as well as image wide augmentation. The synthetically generated images will have instance
-segmentation masks and tightly fit bounding boxes. Let us (me &#x1F60F;) call the overall system SIGtor, to mean
-Synthetic-Image-Generator.
+SIGtor introduces a method for artificially generating an almost infinite number of new, supplementary datasets for object detection or segmentation from any existing dataset. This robust, copy-paste based augmentation approach handles object overlapping, dynamic placement on various background images, and supports both object-level and image-wide augmentations. The generated images include instance segmentation masks and tightly fitted bounding boxes.
 
-## Assumptions
+## Prerequisites
 
-<ol>
-<li>
-You have a dataset you wanted to artificially extend using SIGtor. <b><i>Note that</i></b> SIGtor is an offline dataset generator not an augmentation technique you use while training a deep learning model. The generated images, however, with or without the original images can be used to train a model.
-</li>
-<li>
-Your dataset should be annotated in YOLO formant with bounding boxes annotated as: 
+1. **Existing Dataset**: You must have a dataset that you wish to extend using SIGtor. Note that SIGtor is an offline dataset generator, not a real-time augmentation tool used during model training. The generated images can be utilized with or without the original images for training.
+   
+2. **Annotation Format**: Your dataset should be annotated in YOLO format, with bounding boxes specified as follows:  
+   `./Datasets/Source/Images/image1.jpg x1,y1,x2,y2,A x1,y1,x2,y2,B x1,y1,x2,y2,C x1,y1,x2,y2,D`  
+   For demonstrations, this project will utilize datasets in Pascal VOC or COCO formats, which can be converted to YOLO format using tools provided in the project's tools folder.
 
-<ul> 
-  <div>
-    ./Datasets/Source/Images/image1.jpg $x_1,y_1,x_2,y_2,A\ x_1,y_1,x_2,y_2,B\ x_1,y_1,x_2,y_2,C\ x_1,y_1,x_2,y_2,D$ <br>
-  </div>
-</ul>
+3. **Background Images**: Download suitable background images for use in synthetic image generation. Store these images in a `BackgroundImages` directory, ensuring they do not contain objects from your dataset classes. Automated download scripts and manual curation steps are recommended to avoid introducing unannotated objects into your training dataset.
 
-For this demo I will use Pascal VOC or COCO Object Detection and Instance Segmentation Mask downloaded from Kaggle or COCO dataset site. The tools to convert either Pascal VOC or COCO dataset into YOLO format is found in tools folder of this project.
+## Workflow
 
-Though may not necessarily be in the project folder, one can consider arranging folders as shown in the figure below.
+### Step 1: Expand Source Annotations
 
-<br>
-<ul>
-<img src="./misc/images/folder_hirearchy.jpg" alt="Drawing">
-<br>
-</ul>
-</li>
-<li>
-Download some images from the internet that can be used as a background image and keep it under BackgroundImages folder as shown in the figure above. (Where you put it is up to you as long as you gave the right directory in the project). The background images are not mandatory for the project but is good to create realistic and real world looking artificial images rather than using a plain background. There are many ways to automate the download process such as <a href="https://github.com/hardikvasa/google-images-download"> here </a> or <a href="https://levelup.gitconnected.com/how-to-download-google-images-using-python-2021-82e69c637d59"> here</a>. Once the background images are downloaded, manually remove background images that have objects from your datasets classes. (This is an essential step as you might not want unannotated objects in your training dataset confusing your model’s loss functions).
-</li>
-</ol>
+Expand the source annotations to calculate the Intersection over Union (IoU) among objects, re-annotating to manage overlaps and containments effectively. The `expand_annotation.py` script facilitates this expansion. For instance, separate annotations are generated for non-overlapping objects or objects completely within another object. 
 
-## SIGtor: The Steps
+### Step 2: Generate Artificial Images
 
-Synthetic image generation has two steps.
-<ul>
-<div>
-<li> Step 1: Expand the source annotation. </li>
-<div><img src="./misc/images/example1.png" alt="Drawing" style="width: 500px;" /></div>
+The synthetic images are generated using the `synthetic_image_generator.py` script. Detailed steps and adjustments can be found in the `sig_argument.txt` file, guiding the generation process to suit specific dataset requirements or different object detection and segmentation challenges.
 
+## Detailed Workflow of SIGtor
+SIGtor operates by enriching object detection or segmentation datasets through a sophisticated image generation process, accommodating datasets with images that include object masks (preferably instance segmentation masks) and optional background images. Here’s how the algorithm processes each dataset:
 
-Take for example the above image has four objects (A, B, C and D) annotated as:
-./Datasets/Source/Images/image1.jpg $x_1,y_1,x_2,y_2,A\ x_1,y_1,x_2,y_2,B\ x_1,y_1,x_2,y_2,C\ x_1,y_1,x_2,y_2,D$ <br>
-  
-<i>(Of course A, B, C, D will be the object classes integer index and the coordinates will be different according to the
-objects actual coordinates!)</i>
+1. **Input Selection**: SIGtor begins by randomly selecting a source image along with its corresponding mask from the dataset. If no mask is available, one is created using the bounding box coordinates of the objects in the image.
+2. **Background Preparation**: A target background image is chosen randomly and resized to fit a predetermined dimension.
+3. **Object Selection**: The algorithm then selects an object cutout from the source image, including its coordinates and mask. If the object contains nested objects, these are also included. All objects pass through various geometric and morphological augmentation, object-wise augmentation, before pasted to a new background.
+4. **Overlap Management**: This step is repeated until the Sum of Intersection over Larger Image (IoL, which is going to be the IoL of cutout objects and the background image in this case) of the selected objects surpasses a set threshold (e.g., 80%), ensuring higher coverage of the background image with cutout objects.
+5. **Object Placement**: All selected objects are strategically placed on the background, ensuring optimal space utilization and no overlap. The same placement strategy applies to the objects' masks. 
+6. **Image Composition**: Using techniques such as seamless cloning, alpha blending, or simple copy-pasting, SIGtor creates a new composite image. It also generates an instance segmentation mask for this composite and prepares a new annotation line.
+7. **Saving Outputs**: The composite image, its mask, and the new annotations are saved.
+8. **Post Processing**: The composite image once again passes through some random image wide augmentation.
+9. **Iteration**: Steps 1 through 7 are repeated until the desired number of synthetic images is generated.
+This workflow efficiently utilizes background and object data to create diverse training samples, enhancing the depth and variety of the dataset without needing to acquire new images. This process not only saves resources but also introduces variability in a controlled manner, essential for training robust detection and segmentation models.
 
-The expand_annotation.py file will take in such annotations, and automatically calculates the IoU of each object against
-each other, re-annotates the line into several annotation lines so that:
-<div>
-<ul>
-<li> non-overlapping objects gets their own annotation line, like the case with object <b>D</b>.</li>
-<li> object completely embedded within coordinate of other bigger object (e.g. object <b>B</b> completely within the coordinate of <b>A</b>), also gets its own annotation line.</li>
-<li> bigger objects with other inner objects (e.g. <b>A</b> and <b>B</b>'s relationship) or partially overlapping with other objects (e.g. <b>A</b> and <b>C</b>'s relationship) should be annotated in the same line.
+## Conclusion
 
-</ul>
-</div>
-
-Therefore, after expanding the above annotation line will have at least three annotation lines as in below.
-
-<div>
-./Datasets/Source/Images/image1.jpg $x_1,y_1,x_2,y_2,B$<br>
-./Datasets/Source/Images/image1.jpg $x_1,y_1,x_2,y_2,D$<br>
-./Datasets/Source/Images/image1.jpg $x_1,y_1,x_2,y_2,A\ x_1,y_1,x_2,y_2,B\ x_1,y_1,x_2,y_2,C$<br>
-</div>
-
-To accomplish this first step, we simply run the expand_annotation.py file with command line arguments or without, given
-that we edited the sig_argument.txt file with the correct inputs.
-</div>
-<br>
-
-<div>
-<li> Step 2: Generate the artificial images. </li>
-
-The detail of this ... I leave it to the below gif &#x1F62B; phew.
-<div> <img src="./misc/images/SIGtor.gif" alt="Drawing" style="width: 900px;"></div>
-</div>
-</ul>
-
-Some sample SIGtored images and masks are found in projects Datasets/SIGtored folder. To generate new artificial images
-one can, clone this project and run synthetic_image_generator.py as it is. To work on your own dataset or other public
-datasets like COCO and VOC for your next object detection or segmentation training, edit sig_argument.txt file
-accordingly and follow the above two steps.
-
-# Conclusion
-
-This experimental project has helped me train YOLOv3 and my own version of YOLOv3 called MultiGridDet and DenseYOLO, my
-lighter version of YOLOv2 implementation, to get few extra percentages of accuracies compared to the original work of
-the authors of YOLO and has lead me to believe that copy-paste augmentation is really phenomenal for training deep
-learning models. However,
-
-<ol>
-<li> One must pay attention not to over represent certain set of object classes. Though I removed part of the project that under-samples over-represented classes such as Person and Car to even out or reduce the imbalance, one is free to experiment with such features.</li>
-<li> One must make sure that the training dataset is NOT too repetitive resulting in an overfitting problem.</li>
-</ol>
-
-Finally, I attest that I haven't observed an impact or (significant scale of impact) on the performance of the models I
-trained due to the remaining artifacts of the SIGtored objects or lack of somewhat seamlessness of the pasting. However,
-the longer you train the model the more easily the network starts to pick those objects, but again that is always the
-case when your model learns too many details of your training dataset.
+SIGtor has significantly enhanced the training capabilities of models like YOLOv3 and its derivatives through sophisticated copy-paste augmentation. It is important to manage the diversity and repetition in the training set to prevent overfitting and to ensure balanced representation of object classes. Although some artifacts from synthetic images may remain, they generally do not adversely affect model performance, unless the training duration extends sufficiently for the model to begin overfitting to these details.

@@ -1,6 +1,6 @@
-source_ann_file=./Datasets/Source/source_annotations.txt
+source_ann_file=./Datasets/SIGtored/sigtored_annotations.txt
 destn_dir=./Datasets/SIGtored/
-mask_image_dirs=./Datasets/Source/Masks/
-bckgrnd_imgs_dir=./Datasets/BackgroundImages/
+mask_image_dirs=D:\VOCtrainval_11-May-2012\VOCdevkit\Masks
+bckgrnd_imgs_dir=D:/Python/PhDProjects/SIG\bckgrnd_imgs/
 classnames_file=./Datasets/voc_classes.txt
-total_new_imgs=10
+total_new_imgs=100

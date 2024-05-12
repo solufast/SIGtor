@@ -222,6 +222,7 @@ def random_size(image, mask=None, boxes=None, scale=1.0, prob=0.2, keepaspectrat
 
         boxes = np.array(boxes).reshape(-1, 5).astype('int')
 
+
     return image, mask, boxes
 
 

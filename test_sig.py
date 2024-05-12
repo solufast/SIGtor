@@ -8,18 +8,20 @@ from utils import read_ann, get_colors, draw_boxes, parse_commandline_arguments,
 
 
 def visualize_sigtor(ann_path, class_names=None):
-    line = read_ann(ann_path, shuffle=True)[0]
-    line_content = line.split()
-    img_path = line_content[0]
-    image = cv2.imread(img_path, cv2.IMREAD_COLOR)
-    boxes = np.array([np.array(list(map(float, box.split(',')))) for box in line_content[1:]]).astype('int32').reshape(
-        -1, 5)
-    classes = boxes[..., 4] + 1
-    if class_names is None:
-        class_names = classes
-    colors = get_colors()
-    image = draw_boxes(image, boxes[..., 0:4], classes, class_names, colors)
-    cv2.imwrite("misc/images/test_image.jpg", image)
+    lines = read_ann(ann_path, shuffle=True)
+    for line in lines:
+        line_content = line.split()
+        img_path = line_content[0]
+        filename = os.path.basename(img_path)
+        image = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        boxes = np.array([np.array(list(map(float, box.split(',')))) for box in line_content[1:]]).astype('int32').reshape(
+            -1, 5)
+        classes = boxes[..., 4] + 1
+        if class_names is None:
+            class_names = classes
+        colors = get_colors()
+        image = draw_boxes(image, boxes[..., 0:4], classes, class_names, colors)
+        cv2.imwrite("misc/images/{}".format(filename), image)
 
 
 if __name__ == '__main__':
